@@ -2,6 +2,8 @@ import { Resolver, Query, Mutation, Args, Subscription } from '@nestjs/graphql';
 import { Book, NewBook, UpdateBook } from 'src/graphql.schema';
 import { PubSub } from 'graphql-subscriptions';
 import { BooksService } from './books.service';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/authz/jwt-auth.guard';
 
 const pubSub = new PubSub();
 
@@ -20,7 +22,9 @@ export class BooksResolver {
     return this.booksService.findOne(args);
   }
 
+
   @Mutation('createBook')
+  @UseGuards(JwtAuthGuard)
   async create(@Args('input') args: NewBook): Promise<Book> {
     const createdBook = await this.booksService.create(args);
     pubSub.publish('bookCreated', { bookCreated: createdBook });
