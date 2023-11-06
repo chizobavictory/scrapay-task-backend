@@ -1,11 +1,10 @@
-import helmet from "helmet";
 import * as nocache from "nocache";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 
 function checkEnvironment(configService: ConfigService) {
-  const requiredEnvVars = ["PORT", "ISSUER_BASE_URL", "AUDIENCE", "CLIENT_ORIGIN_URL"];
+  const requiredEnvVars = ["PORT", "AUTH0_AUDIENCE", "AUTH0_DOMAIN", "CLIENT_ORIGIN_URL"];
 
   requiredEnvVars.forEach((envVar) => {
     if (!configService.get<string>(envVar)) {
@@ -20,8 +19,6 @@ async function bootstrap() {
   const configService = app.get<ConfigService>(ConfigService);
   checkEnvironment(configService);
 
-  app.setGlobalPrefix("api");
-
   app.use(nocache());
 
   app.enableCors({
@@ -31,18 +28,6 @@ async function bootstrap() {
     maxAge: 86400,
   });
 
-  app.use(
-    helmet({
-      hsts: { maxAge: 31536000 },
-      frameguard: { action: "deny" },
-      contentSecurityPolicy: {
-        directives: {
-          "default-src": ["'self'"],
-          "frame-ancestors": ["'none'"],
-        },
-      },
-    })
-  );
 
   await app.listen(configService.get<string>("PORT"));
 }
