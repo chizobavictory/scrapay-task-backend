@@ -1,8 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
-import { expressJwtSecret } from "jwks-rsa";
-import { promisify } from "util";
-import * as jwt from "express-jwt";
 import { ConfigService } from "@nestjs/config";
+import * as jwt from "jsonwebtoken";
 
 @Injectable()
 export class AuthorizationGuard implements CanActivate {
@@ -15,24 +13,20 @@ export class AuthorizationGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.getArgByIndex(0);
-    const res = context.getArgByIndex(1);
-    const checkJwt = promisify(
-      jwt({
-        secret: expressJwtSecret({
-          cache: true,
-          rateLimit: true,
-          jwksRequestsPerMinute: 5,
-          jwksUri: `${this.AUTH0_DOMAIN}.well-known/jwks.json`,
-        }),
-        audience: this.AUTH0_AUDIENCE,
-        issuer: this.AUTH0_DOMAIN,
-        algorithms: ["RS256"],
-      })
-    );
+    const req = context.switchToHttp().getRequest();
+    const res = context.switchToHttp().getResponse();
 
     try {
-      await checkJwt(req, res);
+      const token = req.headers.authorization.split(" ")[1]; // Assuming JWT is provided in the "Authorization" header
+
+      const decoded = jwt.verify(token, this.AUTH0_AUDIENCE, {
+        algorithms: ["RS256"],
+        issuer: this.AUTH0_DOMAIN,
+      });
+
+      // You can access decoded user information here if needed
+      req.user = decoded;
+
       return true;
     } catch (error) {
       throw new UnauthorizedException(error);
