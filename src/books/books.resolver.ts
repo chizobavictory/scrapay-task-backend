@@ -21,7 +21,6 @@ export class BooksResolver {
     return this.booksService.findOne(args);
   }
 
-  @UseGuards(AuthorizationGuard)
   @Mutation("createBook")
   async create(@Args("input") args: NewBook): Promise<Book> {
     const createdBook = await this.booksService.create(args);
